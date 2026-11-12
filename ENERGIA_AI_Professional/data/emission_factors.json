@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "metadata": {
+    "unit": "kgCO2e/kWh final",
+    "status": "facteurs provisoires de démonstration",
+    "year": null,
+    "source": "À remplacer par facteurs officiels adaptés au périmètre et à l'année."
+  },
+  "factors_kgco2e_per_kwh": {
+    "electricity": 0.052,
+    "gas": 0.227,
+    "district": 0.18,
+    "other": null
+  }
+}

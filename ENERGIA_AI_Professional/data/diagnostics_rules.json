@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "scope": "Pré-diagnostic indicatif HVAC tertiaire",
+  "disclaimer": "Seuils de screening non réglementaires. Adapter aux usages, climat, occupation et référentiels applicables.",
+  "screening_thresholds": {
+    "high_kwh_m2_year": 400,
+    "elevated_kwh_m2_year": 250
+  },
+  "defaults": {
+    "heating_setpoint_c_review": 20,
+    "cooling_setpoint_c_review": 24,
+    "ventilation_hours_day_review": 18,
+    "lighting_hours_day_review": 12
+  }
+}
