@@ -38,6 +38,8 @@ class BuildingData:
     lighting_fixture_count: int | None = None
     lighting_power_existing_w: float | None = None
     lighting_power_proposed_w: float | None = None
+    electricity_price_eur_kwh: float | None = None
+    lighting_investment_eur: float | None = None
     dhw_gas_kwh: float | None = None
     notes: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)

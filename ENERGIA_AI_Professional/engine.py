@@ -125,6 +125,8 @@ def build_recommendations(data):
         led = simulate_led_savings(data)
 
         if led["available"] and led["savings_kwh_year"] > 0:
+            from lighting_economics import simulate_led_economics
+            led_economics = simulate_led_economics(data)
             recommendations.append({
                 "title": "Remplacement des luminaires par des LED",
                 "detail": (
@@ -145,7 +147,8 @@ def build_recommendations(data):
                     "Simulation technique indicative, "
                     "sans garantie de gains reels."
                 ),
-                "simulation": led
+                "simulation": led,
+                "economics": led_economics
             })
 
     return recommendations

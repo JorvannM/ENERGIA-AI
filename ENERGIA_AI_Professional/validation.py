@@ -82,4 +82,19 @@ def validate_building(data: dict[str, Any]) -> dict:
         except (TypeError, ValueError, OverflowError):
             errors.append(f"{key} doit etre numerique.")
 
+    economic_fields = (
+        "electricity_price_eur_kwh",
+        "lighting_investment_eur",
+    )
+    for key in economic_fields:
+        value = data.get(key)
+        if value is None:
+            continue
+        try:
+            number = float(value)
+            if not math.isfinite(number) or number < 0:
+                errors.append(f"{key} doit etre positif ou nul et fini.")
+        except (TypeError, ValueError, OverflowError):
+            errors.append(f"{key} doit etre numerique.")
+
     return {"valid": not errors, "errors": errors, "warnings": warnings}
