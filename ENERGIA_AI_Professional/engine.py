@@ -151,6 +151,36 @@ def build_recommendations(data):
                 "economics": led_economics
             })
 
+    from ventilation_savings import simulate_ventilation_savings
+
+    if data.get("has_ventilation", True):
+        ventilation = simulate_ventilation_savings(data)
+
+        if ventilation["available"] and ventilation["savings_kwh_year"] > 0:
+            recommendations.append({
+                "title": "Optimisation des horaires de ventilation",
+                "detail": (
+                    f"Economie electrique theorique : "
+                    f"{ventilation['savings_kwh_year']} kWh/an."
+                ),
+                "category": "Ventilation",
+                "priority": "A qualifier",
+                "basis": ventilation["assumption"],
+                "savings_low_pct": 0,
+                "savings_high_pct": ventilation["savings_pct"],
+                "checks": [
+                    "Verifier les besoins de renouvellement d'air",
+                    "Confirmer les horaires et la puissance absorbee",
+                    "Verifier les exigences sanitaires et reglementaires"
+                ],
+                "evidence": [],
+                "savings_note": (
+                    "Simulation indicative a puissance constante. "
+                    "Ne pas additionner aux estimations globales."
+                ),
+                "simulation": ventilation
+            })
+
     return recommendations
 
 def estimate_savings(data, recommendations):

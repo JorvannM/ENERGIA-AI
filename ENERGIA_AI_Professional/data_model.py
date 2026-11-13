@@ -34,6 +34,8 @@ class BuildingData:
     heating_setpoint_c: float | None = None
     cooling_setpoint_c: float | None = None
     ventilation_schedule_hours_day: float | None = None
+    ventilation_fan_power_w: float | None = None
+    ventilation_proposed_hours_day: float | None = None
     lighting_schedule_hours_day: float | None = None
     lighting_fixture_count: int | None = None
     lighting_power_existing_w: float | None = None

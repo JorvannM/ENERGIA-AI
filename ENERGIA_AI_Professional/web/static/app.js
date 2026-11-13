@@ -9,7 +9,10 @@ function payload(){const f=new FormData($('auditForm'));const o=Object.fromEntri
 'lighting_power_proposed_w',
 'lighting_schedule_hours_day',
 'electricity_price_eur_kwh',
-'lighting_investment_eur'
+'lighting_investment_eur',
+'ventilation_fan_power_w',
+'ventilation_schedule_hours_day',
+'ventilation_proposed_hours_day'
 ];
 ledFields.forEach(k=>{
     o[k]=o[k]!==undefined && o[k]!=='' ? Number(o[k]) : null;
@@ -21,7 +24,7 @@ function actions(id,items,empty){const root=$(id);root.replaceChildren();if(!ite
 if(item.simulation && item.simulation.available){
     const sim=document.createElement('div');
     sim.className='muted';
-    sim.textContent='Economies LED estimees : '
+    sim.textContent=(item.category === 'Ventilation' ? 'Economies ventilation estimees : ' : 'Economies LED estimees : ')
         +number(item.simulation.savings_kwh_year)
         +' kWh/an ('+number(item.simulation.savings_pct,1)+' %)';
     el.append(sim);

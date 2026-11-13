@@ -97,4 +97,25 @@ def validate_building(data: dict[str, Any]) -> dict:
         except (TypeError, ValueError, OverflowError):
             errors.append(f"{key} doit etre numerique.")
 
+    ventilation_fields = {
+        "ventilation_fan_power_w": (0, None),
+        "ventilation_schedule_hours_day": (0, 24),
+        "ventilation_proposed_hours_day": (0, 24),
+    }
+
+    for key, (minimum, maximum) in ventilation_fields.items():
+        value = data.get(key)
+        if value is None:
+            continue
+        try:
+            number = float(value)
+            if not math.isfinite(number):
+                errors.append(f"{key} doit etre un nombre fini.")
+            elif key == "ventilation_fan_power_w" and number <= 0:
+                errors.append(f"{key} doit etre strictement positif.")
+            elif number < minimum or (maximum is not None and number > maximum):
+                errors.append(f"{key} doit etre compris entre 0 et 24.")
+        except (TypeError, ValueError, OverflowError):
+            errors.append(f"{key} doit etre numerique.")
+
     return {"valid": not errors, "errors": errors, "warnings": warnings}
