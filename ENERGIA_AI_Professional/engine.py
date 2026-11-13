@@ -76,7 +76,21 @@ def diagnose_building(data):
     for key, result in modules.items():
         for alert in result.get("alerts", []):
             alerts.append({"level":"À investiguer","title":key.replace("_"," ").title(),"detail":alert})
-    intensity = float(data.get("intensity",0) or 0)
+    intensity = float(
+        data.get(
+            "annualized_intensity_kwh_m2_year",
+            data.get("intensity", 0)
+        ) or 0
+    )
+    if data.get("annualization_method") == "linear_extrapolation":
+        alerts.append({
+            "level": "Vigilance",
+            "title": "Consommation annualisee indicative",
+            "detail": (
+                "Consommation extrapolee a 12 mois sans correction "
+                "de saisonnalite. Confirmer avec des donnees annuelles."
+            )
+        })
     threshold = rules["screening_thresholds"]
     if data.get("total_kwh",0) == 0:
         alerts.insert(0, {"level":"Donnée manquante","title":"Aucune consommation renseignée",
