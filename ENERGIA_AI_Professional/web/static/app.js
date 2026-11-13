@@ -3,10 +3,42 @@ const names={dashboard:"Vue d'ensemble",portfolio:"Mes bâtiments",building:'Bâ
 function go(page){document.querySelectorAll('.page').forEach(e=>e.classList.toggle('active',e.id==='page-'+page));document.querySelectorAll('.nav-item').forEach(e=>e.classList.toggle('active',e.dataset.page===page));$('crumb').textContent=names[page];document.querySelector('.sidebar').classList.remove('open');window.scrollTo({top:0,behavior:'smooth'});}
 document.querySelectorAll('[data-page]').forEach(e=>e.addEventListener('click',()=>go(e.dataset.page)));document.querySelectorAll('[data-go]').forEach(e=>e.addEventListener('click',()=>go(e.dataset.go)));$('menuToggle').addEventListener('click',()=>document.querySelector('.sidebar').classList.toggle('open'));
 function notice(message,error=false){const el=$('notice');el.textContent=message;el.className='notice show'+(error?' error':'');setTimeout(()=>el.classList.remove('show'),6500)}
-function payload(){const f=new FormData($('auditForm'));const o=Object.fromEntries(f.entries());['surface','electricity','gas','district','annual_cost','occupancy_hours_week'].forEach(k=>o[k]=Number(o[k]||0));o.construction_year=o.construction_year?Number(o.construction_year):null;o.meter_separation=f.has('meter_separation');return o}
+function payload(){const f=new FormData($('auditForm'));const o=Object.fromEntries(f.entries());['surface','electricity','gas','district','annual_cost','occupancy_hours_week'].forEach(k=>o[k]=Number(o[k]||0));o.construction_year=o.construction_year?Number(o.construction_year):null;const ledFields=[
+'lighting_fixture_count',
+'lighting_power_existing_w',
+'lighting_power_proposed_w',
+'lighting_schedule_hours_day',
+'electricity_price_eur_kwh',
+'lighting_investment_eur'
+];
+ledFields.forEach(k=>{
+    o[k]=o[k]!==undefined && o[k]!=='' ? Number(o[k]) : null;
+});
+o.meter_separation=f.has('meter_separation');return o}
 async function post(url,body){const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!response.ok){let err=await response.json().catch(()=>({}));throw Error(typeof err.detail==='string'?err.detail:JSON.stringify(err.detail||'Erreur du serveur'))}return response}
 const number=(n,d=0)=>Number(n||0).toLocaleString('fr-FR',{maximumFractionDigits:d,minimumFractionDigits:d});
-function actions(id,items,empty){const root=$(id);root.replaceChildren();if(!items.length){const p=document.createElement('p');p.className='muted';p.textContent=empty;root.append(p);return}items.forEach(item=>{const el=document.createElement('div');el.className='action';const strong=document.createElement('strong');strong.textContent=item.title||item.category||'Recommandation';const p=document.createElement('div');p.textContent=item.detail||item.basis||'';el.append(strong,p);root.append(el)})}
+function actions(id,items,empty){const root=$(id);root.replaceChildren();if(!items.length){const p=document.createElement('p');p.className='muted';p.textContent=empty;root.append(p);return}items.forEach(item=>{const el=document.createElement('div');el.className='action';const strong=document.createElement('strong');strong.textContent=item.title||item.category||'Recommandation';const p=document.createElement('div');p.textContent=item.detail||item.basis||'';el.append(strong,p);
+if(item.simulation && item.simulation.available){
+    const sim=document.createElement('div');
+    sim.className='muted';
+    sim.textContent='Economies LED estimees : '
+        +number(item.simulation.savings_kwh_year)
+        +' kWh/an ('+number(item.simulation.savings_pct,1)+' %)';
+    el.append(sim);
+
+    if(item.economics && item.economics.available){
+        const eco=document.createElement('div');
+        eco.className='muted';
+        eco.textContent='Gain financier estime : '
+            +number(item.economics.annual_savings_eur,2)
+            +' EUR/an'
+            +(item.economics.payback_years!==null
+                ? ' | Retour simple : '+number(item.economics.payback_years,2)+' ans'
+                : '');
+        el.append(eco);
+    }
+}
+root.append(el)})}
 function render(result){const d=result.data,c=result.carbon,s=result.savings;$('m-consumption').textContent=number(d.total_kwh);$('m-intensity').textContent=number(d.intensity,1);$('m-cost').textContent=number(d.annual_cost);$('m-carbon').textContent=number(c.total_tonnes,2);$('savings').textContent=number(s.low_kwh)+' – '+number(s.high_kwh);actions('topActions',result.recommendations.slice(0,3),'Aucune action proposée');actions('alerts',result.diagnosis.alerts,'Aucune alerte détectée avec les données renseignées.');actions('recommendations',result.recommendations,'Aucune recommandation disponible.');const ctx=$('energyChart');if(chart)chart.destroy();if(window.Chart){chart=new Chart(ctx,{type:'doughnut',data:{labels:['Électricité','Gaz','Réseau de chaleur'],datasets:[{data:[d.electricity,d.gas,d.district],backgroundColor:['#078eaa','#49b9a8','#9cb3df'],borderWidth:0,hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:20}}}}})}else{ctx.replaceWith(document.createTextNode('Électricité : '+number(d.electricity)+' kWh · Gaz : '+number(d.gas)+' kWh · Réseau : '+number(d.district)+' kWh'))}}
 $('auditForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('analyzeBtn');btn.disabled=true;btn.textContent='Analyse en cours…';try{const p=payload(),r=await (await post('/api/analyze',p)).json();lastAudit=p;lastResult=r;render(r);if(selectedBuildingId){try{await post('/api/v8/buildings/'+encodeURIComponent(selectedBuildingId)+'/audits',p)}catch(saveError){notice('Diagnostic calculé mais historique non enregistré : '+saveError.message,true)}}notice('Diagnostic effectué avec le moteur V5.');go('dashboard')}catch(err){notice(err.message,true)}finally{btn.disabled=false;btn.textContent='Lancer le diagnostic →'}});
 function bubble(text,who){const el=document.createElement('div');el.className='chat-message '+who;el.textContent=text;$('chat').append(el);$('chat').scrollTop=$('chat').scrollHeight}

@@ -27,6 +27,12 @@ class AuditInput(BaseModel):
     meter_separation: bool = False
     occupancy_hours_week: float = 50
     construction_year: int | None = None
+    lighting_fixture_count: int | None = Field(default=None, gt=0)
+    lighting_power_existing_w: float | None = Field(default=None, gt=0)
+    lighting_power_proposed_w: float | None = Field(default=None, gt=0)
+    lighting_schedule_hours_day: float | None = Field(default=None, gt=0, le=24)
+    electricity_price_eur_kwh: float | None = Field(default=None, ge=0)
+    lighting_investment_eur: float | None = Field(default=None, ge=0)
 
 class QuestionInput(BaseModel):
     audit: AuditInput
