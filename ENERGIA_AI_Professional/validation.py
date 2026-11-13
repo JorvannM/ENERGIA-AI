@@ -64,4 +64,22 @@ def validate_building(data: dict[str, Any]) -> dict:
         warnings.append("La ventilation est déclarée présente, mais son type est inconnu.")
     if not data.get("meter_separation"):
         warnings.append("Les usages ne sont pas tous sous-comptés : attribution par poste limitée.")
+    led_fields = (
+        "lighting_fixture_count",
+        "lighting_power_existing_w",
+        "lighting_power_proposed_w",
+    )
+    for key in led_fields:
+        value = data.get(key)
+        if value is None:
+            continue
+        try:
+            number = float(value)
+            if not math.isfinite(number) or number <= 0:
+                errors.append(f"{key} doit etre strictement positif et fini.")
+            elif key == "lighting_fixture_count" and not number.is_integer():
+                errors.append(f"{key} doit etre un entier.")
+        except (TypeError, ValueError, OverflowError):
+            errors.append(f"{key} doit etre numerique.")
+
     return {"valid": not errors, "errors": errors, "warnings": warnings}

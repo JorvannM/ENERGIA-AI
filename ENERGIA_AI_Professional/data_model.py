@@ -35,6 +35,9 @@ class BuildingData:
     cooling_setpoint_c: float | None = None
     ventilation_schedule_hours_day: float | None = None
     lighting_schedule_hours_day: float | None = None
+    lighting_fixture_count: int | None = None
+    lighting_power_existing_w: float | None = None
+    lighting_power_proposed_w: float | None = None
     dhw_gas_kwh: float | None = None
     notes: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
