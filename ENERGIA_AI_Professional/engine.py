@@ -33,6 +33,20 @@ def analyse_building(surface, electricity, gas, district, annual_cost, **kwargs)
         raise ValueError(" ".join(validation["errors"]))
     total = sum(float(data[k] or 0) for k in ("electricity_kwh","gas_kwh","district_kwh","other_kwh"))
     surface = float(data["surface_m2"])
+    period_months = float(data["data_period_months"])
+    annualization_factor = 12.0 / period_months
+    data["annualized_total_kwh"] = total * annualization_factor
+    data["annualized_intensity_kwh_m2_year"] = (
+        total * annualization_factor / surface
+    )
+    data["annualization_method"] = (
+        "measured_12_months" if period_months == 12
+        else "linear_extrapolation"
+    )
+    data["annualization_warning"] = (
+        "" if period_months == 12
+        else "Estimation indicative sans correction de saisonnalite."
+    )
     data.update({
         "surface": surface, "electricity": float(data["electricity_kwh"]),
         "gas": float(data["gas_kwh"]), "district": float(data["district_kwh"]),
