@@ -12,7 +12,9 @@ function payload(){const f=new FormData($('auditForm'));const o=Object.fromEntri
 'lighting_investment_eur',
 'ventilation_fan_power_w',
 'ventilation_schedule_hours_day',
-'ventilation_proposed_hours_day'
+'ventilation_proposed_hours_day',
+'heating_energy_kwh_year',
+'heating_reduction_pct'
 ];
 ledFields.forEach(k=>{
     o[k]=o[k]!==undefined && o[k]!=='' ? Number(o[k]) : null;

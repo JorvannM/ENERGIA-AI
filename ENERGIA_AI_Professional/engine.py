@@ -181,6 +181,35 @@ def build_recommendations(data):
                 "simulation": ventilation
             })
 
+    from heating_savings import simulate_heating_savings
+
+    heating = simulate_heating_savings(data)
+
+    if heating["available"] and heating["savings_kwh_year"] > 0:
+        recommendations.append({
+            "title": "Optimisation energetique du chauffage",
+            "detail": (
+                f"Economie theorique de chauffage : "
+                f"{heating['savings_kwh_year']} kWh/an."
+            ),
+            "category": "Chauffage",
+            "priority": "A qualifier",
+            "basis": heating["assumption"],
+            "savings_low_pct": 0,
+            "savings_high_pct": heating["savings_pct"],
+            "checks": [
+                "Verifier la consommation propre au chauffage",
+                "Justifier le taux de reduction par une etude technique",
+                "Verifier le confort thermique et les consignes"
+            ],
+            "evidence": [],
+            "savings_note": (
+                "Simulation indicative fondee sur un taux saisi. "
+                "Ne pas additionner aux estimations globales."
+            ),
+            "simulation": heating
+        })
+
     return recommendations
 
 def estimate_savings(data, recommendations):

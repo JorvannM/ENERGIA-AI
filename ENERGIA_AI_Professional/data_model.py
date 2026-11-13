@@ -32,6 +32,8 @@ class BuildingData:
     other_kwh: float = 0.0
     annual_energy_cost_eur: float = 0.0
     heating_setpoint_c: float | None = None
+    heating_energy_kwh_year: float | None = None
+    heating_reduction_pct: float | None = None
     cooling_setpoint_c: float | None = None
     ventilation_schedule_hours_day: float | None = None
     ventilation_fan_power_w: float | None = None

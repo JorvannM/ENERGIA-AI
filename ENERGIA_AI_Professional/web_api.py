@@ -33,6 +33,8 @@ class AuditInput(BaseModel):
     lighting_schedule_hours_day: float | None = Field(default=None, gt=0, le=24)
     electricity_price_eur_kwh: float | None = Field(default=None, ge=0)
     lighting_investment_eur: float | None = Field(default=None, ge=0)
+    heating_energy_kwh_year: float | None = Field(default=None, ge=0)
+    heating_reduction_pct: float | None = Field(default=None, ge=0, le=100)
     ventilation_fan_power_w: float | None = Field(default=None, gt=0)
     ventilation_schedule_hours_day: float | None = Field(default=None, ge=0, le=24)
     ventilation_proposed_hours_day: float | None = Field(default=None, ge=0, le=24)

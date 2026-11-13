@@ -97,6 +97,24 @@ def validate_building(data: dict[str, Any]) -> dict:
         except (TypeError, ValueError, OverflowError):
             errors.append(f"{key} doit etre numerique.")
 
+    heating_energy = data.get("heating_energy_kwh_year")
+    if heating_energy is not None:
+        try:
+            value = float(heating_energy)
+            if not math.isfinite(value) or value < 0:
+                errors.append("heating_energy_kwh_year doit etre un nombre fini positif ou nul.")
+        except (TypeError, ValueError, OverflowError):
+            errors.append("heating_energy_kwh_year doit etre numerique.")
+
+    heating_reduction = data.get("heating_reduction_pct")
+    if heating_reduction is not None:
+        try:
+            value = float(heating_reduction)
+            if not math.isfinite(value) or not 0 <= value <= 100:
+                errors.append("heating_reduction_pct doit etre compris entre 0 et 100.")
+        except (TypeError, ValueError, OverflowError):
+            errors.append("heating_reduction_pct doit etre numerique.")
+
     ventilation_fields = {
         "ventilation_fan_power_w": (0, None),
         "ventilation_schedule_hours_day": (0, 24),
