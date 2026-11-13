@@ -117,7 +117,38 @@ def diagnose_building(data):
 
 def build_recommendations(data):
     diagnosis = diagnose_building(data)
-    return recommendations_module(diagnosis, data)
+    recommendations = recommendations_module(diagnosis, data)
+
+    from lighting_savings import simulate_led_savings
+
+    if data.get("has_lighting", True):
+        led = simulate_led_savings(data)
+
+        if led["available"] and led["savings_kwh_year"] > 0:
+            recommendations.append({
+                "title": "Remplacement des luminaires par des LED",
+                "detail": (
+                    f"Economie theorique : {led['savings_kwh_year']} kWh/an "
+                    f"({led['savings_pct']} % du poste eclairage)."
+                ),
+                "category": "Eclairage",
+                "priority": "A qualifier",
+                "basis": led["assumption"],
+                "savings_low_pct": 0,
+                "savings_high_pct": led["savings_pct"],
+                "checks": [
+                    "Verifier les puissances reelles",
+                    "Confirmer les horaires de fonctionnement"
+                ],
+                "evidence": [],
+                "savings_note": (
+                    "Simulation technique indicative, "
+                    "sans garantie de gains reels."
+                ),
+                "simulation": led
+            })
+
+    return recommendations
 
 def estimate_savings(data, recommendations):
     # Ne pas additionner des gains par poste sans sous-comptage : enveloppe conservatrice globale.
