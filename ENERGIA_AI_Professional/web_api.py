@@ -99,3 +99,38 @@ def address_dpe(payload: LocationQuery):
 @app.post('/api/address/prefill')
 def address_prefill(payload: PrefillQuery):
     return approved_prefill(payload.candidate)
+
+# V8 Lot 1: local portfolio prototype (no authentication; local-only).
+from portfolio_store import save_building, list_buildings, get_building, save_audit, list_audits, get_audit
+
+@app.get('/api/v8/buildings')
+def v8_buildings():
+    return {'buildings':list_buildings()}
+
+@app.post('/api/v8/buildings',status_code=201)
+def v8_create_building(payload: AuditInput):
+    return {'id':save_building(payload.model_dump())}
+
+@app.get('/api/v8/buildings/{building_id}')
+def v8_get_building(building_id: str):
+    result=get_building(building_id)
+    if not result:raise HTTPException(404,'Bâtiment introuvable')
+    return result
+
+@app.post('/api/v8/buildings/{building_id}/audits',status_code=201)
+def v8_create_audit(building_id: str,payload: AuditInput):
+    if not get_building(building_id):raise HTTPException(404,'Bâtiment introuvable')
+    result=calculate(payload)
+    audit_id=save_audit(building_id,payload.model_dump(),result)
+    return {'id':audit_id,'result':result}
+
+@app.get('/api/v8/buildings/{building_id}/audits')
+def v8_audits(building_id: str):
+    if not get_building(building_id):raise HTTPException(404,'Bâtiment introuvable')
+    return {'audits':list_audits(building_id)}
+
+@app.get('/api/v8/buildings/{building_id}/audits/{audit_id}')
+def v8_get_audit(building_id: str,audit_id: str):
+    result=get_audit(building_id,audit_id)
+    if not result:raise HTTPException(404,'Audit introuvable')
+    return result
