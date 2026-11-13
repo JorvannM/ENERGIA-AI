@@ -1,7 +1,7 @@
 """Interface HTTP additionnelle : le moteur V5 original n'est pas modifié."""
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, Response
+from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi.responses import FileResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from engine import analyse_building, diagnose_building, build_recommendations, estimate_savings, estimate_carbon, ask_ai
@@ -101,36 +101,93 @@ def address_prefill(payload: PrefillQuery):
     return approved_prefill(payload.candidate)
 
 # V8 Lot 1: local portfolio prototype (no authentication; local-only).
-from portfolio_store import save_building, list_buildings, get_building, save_audit, list_audits, get_audit
+from enterprise.store import init_db, Session, User, save_building, list_buildings, get_building, save_audit, list_audits, get_audit
+from enterprise.auth import get_user, csrf_token, require_write, signer, COOKIE, SESSION_SECONDS, PH
+from sqlalchemy import select
+from argon2.exceptions import VerifyMismatchError, VerificationError
+import os
+
+init_db()
+
+class LoginInput(BaseModel):
+    email: str = Field(min_length=3,max_length=254)
+    password: str = Field(min_length=1,max_length=200)
+
+@app.post('/api/auth/login')
+def login(payload:LoginInput,request:Request):
+    with Session() as db:
+        account=db.scalar(select(User).where(User.email==payload.email.strip().lower()))
+        try: valid=bool(account) and PH.verify(account.password_hash,payload.password)
+        except (VerifyMismatchError,VerificationError):valid=False
+        if not valid:raise HTTPException(401,'Identifiants invalides')
+        uid,org=account.id,account.organization_id
+    secure=os.getenv('ENERGIA_SECURE_COOKIES','0')=='1'
+    resp=JSONResponse({'ok':True})
+    resp.set_cookie(COOKIE,signer().dumps({'uid':uid,'org':org}),httponly=True,secure=secure,samesite='strict',max_age=SESSION_SECONDS,path='/')
+    return resp
+
+@app.get('/api/auth/me')
+def me(request:Request):
+    user=get_user(request)
+    return {'user':user,'csrf':csrf_token(request)}
+
+@app.post('/api/auth/logout')
+def logout():
+    response=JSONResponse({'ok':True})
+    response.delete_cookie(COOKIE,path='/')
+    return response
+
+@app.middleware('http')
+async def protect_api(request:Request,call_next):
+    path=request.url.path
+    if path.startswith('/api/') and path not in ('/api/auth/login','/api/auth/me'):
+        try:
+            get_user(request)
+            if request.method not in ('GET','HEAD','OPTIONS'):
+                from enterprise.auth import verify_csrf
+                verify_csrf(request)
+        except HTTPException as exc:
+            return JSONResponse({'detail':exc.detail},status_code=exc.status_code)
+    if path.startswith('/api/docs') or path.startswith('/openapi.json'):
+        try:get_user(request)
+        except HTTPException as exc:return JSONResponse({'detail':exc.detail},status_code=exc.status_code)
+    return await call_next(request)
+
 
 @app.get('/api/v8/buildings')
-def v8_buildings():
-    return {'buildings':list_buildings()}
+def v8_buildings(user=Depends(get_user)):
+    return {'buildings':list_buildings(user["organization_id"])}
 
 @app.post('/api/v8/buildings',status_code=201)
-def v8_create_building(payload: AuditInput):
-    return {'id':save_building(payload.model_dump())}
+def v8_create_building(payload: AuditInput,user=Depends(get_user)):
+    require_write(user)
+    return {'id':save_building(user["organization_id"],payload.model_dump())}
 
 @app.get('/api/v8/buildings/{building_id}')
-def v8_get_building(building_id: str):
-    result=get_building(building_id)
+def v8_get_building(building_id: str,user=Depends(get_user)):
+    result=get_building(user["organization_id"],building_id)
     if not result:raise HTTPException(404,'Bâtiment introuvable')
     return result
 
 @app.post('/api/v8/buildings/{building_id}/audits',status_code=201)
-def v8_create_audit(building_id: str,payload: AuditInput):
-    if not get_building(building_id):raise HTTPException(404,'Bâtiment introuvable')
+def v8_create_audit(building_id: str,payload: AuditInput,user=Depends(get_user)):
+    require_write(user)
+    if not get_building(user["organization_id"],building_id):raise HTTPException(404,'Bâtiment introuvable')
     result=calculate(payload)
-    audit_id=save_audit(building_id,payload.model_dump(),result)
+    audit_id=save_audit(user["organization_id"],user["id"],building_id,payload.model_dump(),result)
     return {'id':audit_id,'result':result}
 
 @app.get('/api/v8/buildings/{building_id}/audits')
-def v8_audits(building_id: str):
-    if not get_building(building_id):raise HTTPException(404,'Bâtiment introuvable')
-    return {'audits':list_audits(building_id)}
+def v8_audits(building_id: str,user=Depends(get_user)):
+    if not get_building(user["organization_id"],building_id):raise HTTPException(404,'Bâtiment introuvable')
+    return {'audits':list_audits(user["organization_id"],building_id)}
 
 @app.get('/api/v8/buildings/{building_id}/audits/{audit_id}')
-def v8_get_audit(building_id: str,audit_id: str):
-    result=get_audit(building_id,audit_id)
+def v8_get_audit(building_id: str,audit_id: str,user=Depends(get_user)):
+    result=get_audit(user["organization_id"],building_id,audit_id)
     if not result:raise HTTPException(404,'Audit introuvable')
     return result
+
+# V8 Lot 2 : administration des collaborateurs (sans modification du moteur V5).
+from enterprise.admin import router as enterprise_admin_router
+app.include_router(enterprise_admin_router)

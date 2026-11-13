@@ -85,7 +85,7 @@ async function refreshPortfolio(){
 }
 $('refreshPortfolio').addEventListener('click',refreshPortfolio);
 $('saveBuilding').addEventListener('click',async()=>{
- try{const r=await post('/api/v8/buildings',payload());const data=await r.json();selectedBuildingId=data.id;notice('Bâtiment enregistré localement.');await refreshPortfolio();}
+ try{const r=await post('/api/v8/buildings',payload());const data=await r.json();selectedBuildingId=data.id;notice('Bâtiment enregistré dans votre espace professionnel.');await refreshPortfolio();}
  catch(err){notice(err.message,true)}
 });
 // Persist audit results after a successful existing V5 calculation, when a building is selected.
