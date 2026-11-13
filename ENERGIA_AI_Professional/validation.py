@@ -1,5 +1,6 @@
 """Validation et contrôle de cohérence des données bâtiment."""
 from __future__ import annotations
+import math
 from typing import Any
 
 REQUIRED_NUMERIC = ("surface_m2", "occupancy_hours_week", "occupancy_days_year",
@@ -12,22 +13,49 @@ def validate_building(data: dict[str, Any]) -> dict:
         value = data.get(key, 0)
         try:
             numeric = float(value)
-            if numeric < 0:
+            if not math.isfinite(numeric):
+                errors.append(f"{key} doit etre un nombre fini.")
+            elif numeric < 0:
                 errors.append(f"{key} ne peut pas être négatif.")
         except (TypeError, ValueError):
             errors.append(f"{key} doit être numérique.")
-    if float(data.get("surface_m2") or 0) <= 0:
+    try:
+        surface = float(data.get("surface_m2") or 0)
+    except (TypeError, ValueError):
+        surface = None
+    if surface is not None and surface <= 0:
         errors.append("La surface utile doit être strictement positive.")
-    if int(data.get("data_period_months") or 0) <= 0:
+    try:
+        period = float(data.get("data_period_months") or 0)
+    except (TypeError, ValueError):
+        period = None
+    if period is not None and period <= 0:
         errors.append("La période de données doit être supérieure à zéro.")
-    if int(data.get("data_period_months") or 0) != 12:
+    if period is not None and period != 12:
         warnings.append("La période n'est pas de 12 mois : annualiser avec prudence.")
-    if float(data.get("occupancy_hours_week") or 0) > 168:
+    try:
+        hours = float(data.get("occupancy_hours_week") or 0)
+    except (TypeError, ValueError, OverflowError):
+        hours = None
+    if hours is not None and hours > 168:
         errors.append("Les heures d'occupation hebdomadaires dépassent 168 h.")
-    if float(data.get("occupancy_days_year") or 0) > 366:
+    try:
+        days = float(data.get("occupancy_days_year") or 0)
+    except (TypeError, ValueError, OverflowError):
+        days = None
+    if days is not None and days > 366:
         errors.append("Les jours d'occupation annuels dépassent 366.")
-    energy = sum(float(data.get(k) or 0) for k in
-                 ("electricity_kwh", "gas_kwh", "district_kwh", "other_kwh"))
+    energy_values = []
+    for key in ("electricity_kwh", "gas_kwh", "district_kwh", "other_kwh"):
+        try:
+            value = float(data.get(key) or 0)
+            if not math.isfinite(value):
+                continue
+            energy_values.append(value)
+        except (TypeError, ValueError, OverflowError):
+            continue
+
+    energy = sum(energy_values)
     if energy == 0:
         warnings.append("Aucune consommation annuelle n'est renseignée.")
     if data.get("has_cooling") and data.get("cooling_type") in (None, "", "unknown"):
