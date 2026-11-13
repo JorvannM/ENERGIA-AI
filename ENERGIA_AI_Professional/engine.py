@@ -161,7 +161,15 @@ def estimate_savings(data, recommendations):
     return {"low_kwh":data["total_kwh"]*low/100, "high_kwh":data["total_kwh"]*high/100,
             "low_eur":data["annual_cost"]*low/100, "high_eur":data["annual_cost"]*high/100,
             "low_pct":low,"high_pct":high,
-            "warning":"Fourchette indicative globale, non additive et à confirmer par étude."}
+            "warning":"Fourchette indicative globale, non additive et à confirmer par étude.",
+            "method":"screening_percentage",
+            "confidence":"low",
+            "validated":False,
+            "assumptions":{
+                "basis":"Pourcentage forfaitaire de la consommation globale",
+                "meter_separation":bool(data.get("meter_separation")),
+                "technical_calculation":False
+            }}
 
 def estimate_carbon(data, factors=None):
     normalized = dict(data)
