@@ -2,3 +2,118 @@
 
 /* Recherche DPE */
 .address-lookup{padding:22px;margin-bottom:24px;border:1px solid #dce8ef;border-radius:16px;background:#f6fbfe}.address-lookup h3{margin-top:0}.lookup-row{display:flex;gap:12px;align-items:center}.lookup-row input{flex:1;min-width:0;padding:13px;border:1px solid #cbdde9;border-radius:10px;background:#fff}.lookup-results{display:grid;gap:8px;margin-top:12px}.lookup-choice{text-align:left;padding:12px 14px;border:1px solid #d6e7f0;border-radius:10px;background:white;color:#16426a;cursor:pointer}.lookup-choice:hover{border-color:#0797ae;background:#ecf9fc}@media(max-width:650px){.lookup-row{flex-direction:column;align-items:stretch}}
+
+
+/* ENERGIA V8 - Bilan energetique detaille */
+
+#energyBreakdownPanel {
+    margin-top: 22px;
+}
+
+.energy-summary {
+    background: linear-gradient(110deg, #edf8fb, #f7fbfd);
+    border: 1px solid #dcecf2;
+    border-radius: 12px;
+    padding: 22px;
+    margin: 20px 0;
+}
+
+.energy-summary-label {
+    font-size: 12px;
+    color: #647f92;
+    margin-bottom: 8px;
+}
+
+.energy-summary-value {
+    font-size: clamp(25px, 3vw, 36px);
+    font-weight: 800;
+    color: #087f9b;
+    font-variant-numeric: tabular-nums;
+}
+
+.energy-section-title {
+    font-size: 14px;
+    font-weight: 750;
+    margin: 24px 0 14px;
+    color: #182b46;
+}
+
+.energy-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(120px, 1.5fr) auto;
+    align-items: center;
+    gap: 16px;
+    padding: 13px 0;
+    border-bottom: 1px solid #edf1f5;
+}
+
+.energy-row-label {
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.energy-row-value {
+    font-size: 13px;
+    font-weight: 700;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.energy-bar {
+    height: 9px;
+    background: #edf2f7;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.energy-bar-fill {
+    height: 100%;
+    background: #078ca6;
+    border-radius: 20px;
+}
+
+.energy-source {
+    font-size: 11px;
+    color: #8191a4;
+    margin-top: 5px;
+}
+
+@media(max-width: 650px) {
+    .energy-row {
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+    }
+
+    .energy-row .energy-bar {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .energy-summary {
+        padding: 17px;
+    }
+}
+
+
+/* ENERGIA V8 - Alertes de coherence */
+
+#energyIntelligencePanel .action.energy-warning {
+    background: #fff8ef;
+    border-left: 3px solid #e6a04b;
+    color: #704b22;
+}
+
+#energyIntelligencePanel .energy-warning strong {
+    color: #9b5d19;
+}
+
+#energyIntelligencePanel .energy-warning-label {
+    display: inline-block;
+    margin-bottom: 8px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #ffebd1;
+    color: #965b19;
+    font-size: 11px;
+    font-weight: 700;
+}

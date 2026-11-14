@@ -54,7 +54,19 @@ def calculate(payload: AuditInput):
         recommendations = build_recommendations(data)
         savings = estimate_savings(data, recommendations)
         carbon = estimate_carbon(data)
-        return dict(data=data, diagnosis=diagnosis, recommendations=recommendations, savings=savings, carbon=carbon)
+        from energy_breakdown import build_energy_breakdown
+        energy_breakdown = build_energy_breakdown(data)
+        from energy_intelligence import analyze_energy_breakdown
+        energy_intelligence = analyze_energy_breakdown(energy_breakdown)
+        return dict(
+            data=data,
+            diagnosis=diagnosis,
+            recommendations=recommendations,
+            savings=savings,
+            carbon=carbon,
+            energy_breakdown=energy_breakdown,
+            energy_intelligence=energy_intelligence,
+        )
     except (ValueError, TypeError) as exc:
         raise HTTPException(422, detail=str(exc)) from exc
 
