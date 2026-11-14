@@ -115,6 +115,28 @@ def validate_building(data: dict[str, Any]) -> dict:
         except (TypeError, ValueError, OverflowError):
             errors.append("heating_reduction_pct doit etre numerique.")
 
+    cooling_fields = {
+        "cooling_capacity_kw": (0, None),
+        "cooling_hours_year": (0, 8760),
+        "cooling_eer_existing": (0, None),
+        "cooling_eer_proposed": (0, None),
+    }
+
+    for key, (minimum, maximum) in cooling_fields.items():
+        value = data.get(key)
+        if value is None:
+            continue
+        try:
+            number = float(value)
+            if not math.isfinite(number):
+                errors.append(f"{key} doit etre un nombre fini.")
+            elif key != "cooling_hours_year" and number <= 0:
+                errors.append(f"{key} doit etre strictement positif.")
+            elif number < minimum or (maximum is not None and number > maximum):
+                errors.append(f"{key} doit etre compris entre 0 et 8760.")
+        except (TypeError, ValueError, OverflowError):
+            errors.append(f"{key} doit etre numerique.")
+
     ventilation_fields = {
         "ventilation_fan_power_w": (0, None),
         "ventilation_schedule_hours_day": (0, 24),

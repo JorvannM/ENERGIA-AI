@@ -210,6 +210,37 @@ def build_recommendations(data):
             "simulation": heating
         })
 
+    from cooling_savings import simulate_cooling_savings
+
+    if data.get("has_cooling", True):
+        cooling = simulate_cooling_savings(data)
+
+        if cooling["available"] and cooling["savings_kwh_year"] > 0:
+            recommendations.append({
+                "title": "Amelioration de l'efficacite de la climatisation",
+                "detail": (
+                    f"Economie electrique theorique : "
+                    f"{cooling['savings_kwh_year']} kWh/an."
+                ),
+                "category": "Climatisation",
+                "priority": "A qualifier",
+                "basis": cooling["assumption"],
+                "savings_low_pct": 0,
+                "savings_high_pct": cooling["savings_pct"],
+                "checks": [
+                    "Verifier la puissance frigorifique reelle",
+                    "Confirmer les heures annuelles de fonctionnement",
+                    "Verifier les EER des equipements",
+                    "Evaluer les performances a charge partielle"
+                ],
+                "evidence": [],
+                "savings_note": (
+                    "Simulation indicative a puissance constante. "
+                    "Ne pas additionner aux estimations globales."
+                ),
+                "simulation": cooling
+            })
+
     return recommendations
 
 def estimate_savings(data, recommendations):

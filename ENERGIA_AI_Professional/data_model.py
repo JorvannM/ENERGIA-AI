@@ -35,6 +35,10 @@ class BuildingData:
     heating_energy_kwh_year: float | None = None
     heating_reduction_pct: float | None = None
     cooling_setpoint_c: float | None = None
+    cooling_capacity_kw: float | None = None
+    cooling_hours_year: float | None = None
+    cooling_eer_existing: float | None = None
+    cooling_eer_proposed: float | None = None
     ventilation_schedule_hours_day: float | None = None
     ventilation_fan_power_w: float | None = None
     ventilation_proposed_hours_day: float | None = None
