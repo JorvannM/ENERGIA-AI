@@ -38,7 +38,46 @@
   </div>
 </article></section>
 <section class="page" id="page-portfolio"><div class="section-head"><div><div class="eyebrow">V8 · ESPACE PROFESSIONNEL</div><h2>Mes bâtiments</h2><p>Enregistrez vos bâtiments et retrouvez les audits de votre entreprise.</p></div><button class="primary" data-go="building">+ Nouveau diagnostic</button></div><article class="panel"><h3>Portefeuille de votre entreprise</h3><p class="muted">Accès réservé aux membres de votre entreprise. Version de développement : ne pas héberger publiquement sans validation de sécurité.</p><button class="secondary" id="refreshPortfolio">Actualiser</button><div id="portfolioList" class="action-list"></div></article></section>
-<section class="page" id="page-building"><div class="section-head"><div><div class="eyebrow">ÉTAPE 01</div><h2>Identification du bâtiment</h2><p>Décrivez le bâtiment pour personnaliser l'analyse.</p></div></div><article class="panel form-panel"><div class="address-lookup"><h3>Recherche automatique du bâtiment</h3><p class="muted">Identifiez l'adresse, puis consultez les DPE publics disponibles. Sélectionnez le diagnostic correspondant au périmètre étudié.</p><div class="lookup-row"><input id="addressQuery" placeholder="Ex. 10 rue de la Paix, 75002 Paris" autocomplete="street-address"><button class="primary" id="searchAddress" type="button">Rechercher l'adresse</button></div><div id="addressMatches" class="lookup-results"></div><div id="dpeMatches" class="lookup-results"></div><p class="muted" id="dpeWarning">Les données conventionnelles DPE ne remplacent pas les consommations réelles nécessaires à l'audit.</p></div><form id="auditForm"><h3>Informations générales</h3><div class="form-grid"><label>Nom du bâtiment<input name="name" placeholder="Ex. Siège administratif"></label><label>Adresse<input name="address" placeholder="Ex. 12 rue de Paris, 75001 Paris"></label><label>Usage<select name="building_type"><option value="bureaux">Bureaux</option><option value="residentiel">Résidentiel</option><option value="commerce">Commerce</option><option value="enseignement">Enseignement</option><option value="autre">Autre</option></select></label><label>Surface utile (m²)<input name="surface" type="number" min="1" step="any" value="500" required></label><label>Année de construction<input name="construction_year" type="number" min="1800" max="2100" placeholder="Facultatif"></label><label>Occupation (h / semaine)<input name="occupancy_hours_week" type="number" min="0" max="168" value="50"></label></div><h3>Systèmes techniques</h3><div class="form-grid"><label>Chauffage<select name="heating_type"><option value="unknown">Non renseigné</option><option value="electric">Électrique</option><option value="gas">Gaz</option><option value="district">Réseau de chaleur</option><option value="heat_pump">Pompe à chaleur</option></select></label><label>Climatisation<select name="cooling_type"><option value="unknown">Non renseignée</option><option value="split">Climatisation indépendante</option><option value="central">Centralisée</option><option value="none">Aucune</option></select></label><label>Ventilation<select name="ventilation_type"><option value="unknown">Non renseignée</option><option value="single_flow">VMC simple flux</option><option value="double_flow">VMC double flux</option><option value="natural">Naturelle</option></select></label><label>Éclairage<select name="lighting_type"><option value="unknown">Non renseigné</option><option value="led">LED</option><option value="fluorescent">Fluorescent</option><option value="halogen">Halogène</option></select></label></div><h3>Consommations annuelles</h3><div class="form-grid"><label>Électricité (kWh)<input name="electricity" type="number" min="0" step="any" value="45000" required></label><label>Gaz (kWh)<input name="gas" type="number" min="0" step="any" value="12000" required></label><label>Réseau de chaleur (kWh)<input name="district" type="number" min="0" step="any" value="0" required></label><label>Coût énergétique annuel (€)<input name="annual_cost" type="number" min="0" step="any" value="8500" required></label></div><label class="check"><input type="checkbox" name="meter_separation"> Compteurs séparés par énergie</label><h3>Simulation de climatisation (facultatif)</h3>
+<section class="page" id="page-building">
+
+<article class="panel" id="consumptionImportPanel">
+  <div class="eyebrow">NOUVEAU - ENERGY INTELLIGENCE</div>
+  <h3>Importer mes consommations energetiques</h3>
+  <p class="muted">
+    Vous pouvez conserver la saisie manuelle ou importer
+    un historique de consommations CSV ou Excel.
+    Les deux methodes pourront etre combinees.
+  </p>
+
+  <form id="consumptionImportForm">
+    <div class="form-grid">
+      <label>
+        Fichier de consommations (CSV ou Excel)
+        <input
+          type="file"
+          id="consumptionFile"
+          name="file"
+          accept=".csv,.xlsx"
+          required
+        >
+      </label>
+    </div>
+
+    <p class="muted">
+      Colonnes attendues : year, month, energy, kwh,
+      cost_eur (facultatif).
+      Taille maximale : 5 Mo.
+    </p>
+
+    <button type="submit" class="primary">
+      Analyser mes consommations
+    </button>
+  </form>
+
+  <div id="consumptionImportStatus" aria-live="polite"></div>
+  <div id="consumptionImportResults"></div>
+</article>
+<div class="section-head"><div><div class="eyebrow">ÉTAPE 01</div><h2>Identification du bâtiment</h2><p>Décrivez le bâtiment pour personnaliser l'analyse.</p></div></div><article class="panel form-panel"><div class="address-lookup"><h3>Recherche automatique du bâtiment</h3><p class="muted">Identifiez l'adresse, puis consultez les DPE publics disponibles. Sélectionnez le diagnostic correspondant au périmètre étudié.</p><div class="lookup-row"><input id="addressQuery" placeholder="Ex. 10 rue de la Paix, 75002 Paris" autocomplete="street-address"><button class="primary" id="searchAddress" type="button">Rechercher l'adresse</button></div><div id="addressMatches" class="lookup-results"></div><div id="dpeMatches" class="lookup-results"></div><p class="muted" id="dpeWarning">Les données conventionnelles DPE ne remplacent pas les consommations réelles nécessaires à l'audit.</p></div><form id="auditForm"><h3>Informations générales</h3><div class="form-grid"><label>Nom du bâtiment<input name="name" placeholder="Ex. Siège administratif"></label><label>Adresse<input name="address" placeholder="Ex. 12 rue de Paris, 75001 Paris"></label><label>Usage<select name="building_type"><option value="bureaux">Bureaux</option><option value="residentiel">Résidentiel</option><option value="commerce">Commerce</option><option value="enseignement">Enseignement</option><option value="autre">Autre</option></select></label><label>Surface utile (m²)<input name="surface" type="number" min="1" step="any" value="500" required></label><label>Année de construction<input name="construction_year" type="number" min="1800" max="2100" placeholder="Facultatif"></label><label>Occupation (h / semaine)<input name="occupancy_hours_week" type="number" min="0" max="168" value="50"></label></div><h3>Systèmes techniques</h3><div class="form-grid"><label>Chauffage<select name="heating_type"><option value="unknown">Non renseigné</option><option value="electric">Électrique</option><option value="gas">Gaz</option><option value="district">Réseau de chaleur</option><option value="heat_pump">Pompe à chaleur</option></select></label><label>Climatisation<select name="cooling_type"><option value="unknown">Non renseignée</option><option value="split">Climatisation indépendante</option><option value="central">Centralisée</option><option value="none">Aucune</option></select></label><label>Ventilation<select name="ventilation_type"><option value="unknown">Non renseignée</option><option value="single_flow">VMC simple flux</option><option value="double_flow">VMC double flux</option><option value="natural">Naturelle</option></select></label><label>Éclairage<select name="lighting_type"><option value="unknown">Non renseigné</option><option value="led">LED</option><option value="fluorescent">Fluorescent</option><option value="halogen">Halogène</option></select></label></div><h3>Consommations annuelles</h3><div class="form-grid"><label>Électricité (kWh)<input name="electricity" type="number" min="0" step="any" value="45000" required></label><label>Gaz (kWh)<input name="gas" type="number" min="0" step="any" value="12000" required></label><label>Réseau de chaleur (kWh)<input name="district" type="number" min="0" step="any" value="0" required></label><label>Coût énergétique annuel (€)<input name="annual_cost" type="number" min="0" step="any" value="8500" required></label></div><label class="check"><input type="checkbox" name="meter_separation"> Compteurs séparés par énergie</label><h3>Simulation de climatisation (facultatif)</h3>
 <p class="muted">Comparez la consommation electrique de deux equipements de climatisation a besoin frigorifique identique. Calcul indicatif a puissance constante.</p>
 <div class="form-grid">
 <label>Puissance frigorifique (kW)
@@ -53,6 +92,7 @@
 <label>EER propose
 <input name="cooling_eer_proposed" type="number" min="0.01" step="any" placeholder="Ex. 4.0">
 </label>
+<label>Investissement climatisation (EUR)<input name="cooling_investment_eur" type="number" min="0" step="any" placeholder="Ex. 4000"></label>
 </div><h3>Simulation de chauffage (facultatif)</h3>
 <p class="muted">Estimez les economies de chauffage a partir d'une consommation annuelle connue et d'un taux de reduction justifie par une etude technique.</p>
 <div class="form-grid">
@@ -62,6 +102,7 @@
 <label>Reduction envisagee (%)
 <input name="heating_reduction_pct" type="number" min="0" max="100" step="any" placeholder="Ex. 12">
 </label>
+<label>Investissement chauffage (EUR)<input name="heating_investment_eur" type="number" min="0" step="any" placeholder="Ex. 4000"></label>
 </div><h3>Simulation de ventilation (facultatif)</h3>
 <p class="muted">Comparez les horaires de fonctionnement des ventilateurs pour estimer les economies electriques. Les horaires proposes doivent respecter les besoins de renouvellement d'air.</p>
 <div class="form-grid">
@@ -74,6 +115,7 @@
 <label>Fonctionnement propose (h/jour)
 <input name="ventilation_proposed_hours_day" type="number" min="0" max="24" step="any" placeholder="Ex. 10">
 </label>
+<label>Investissement ventilation (EUR)<input name="ventilation_investment_eur" type="number" min="0" step="any" placeholder="Ex. 4000"></label>
 </div><h3>Simulation d'eclairage LED (facultatif)</h3>
 <p class="muted">Renseignez les caracteristiques des luminaires pour estimer les economies d'energie et la rentabilite du remplacement.</p>
 <div class="form-grid">
@@ -82,9 +124,103 @@
 <label>Puissance proposee (W/luminaire)<input name="lighting_power_proposed_w" type="number" min="0.01" step="any" placeholder="Ex. 30"></label>
 <label>Heures d'eclairage par jour<input name="lighting_schedule_hours_day" type="number" min="0.01" max="24" step="any" placeholder="Ex. 10"></label>
 <label>Prix de l'electricite (EUR/kWh)<input name="electricity_price_eur_kwh" type="number" min="0" step="any" placeholder="Ex. 0.20"></label>
+<label>Prix du gaz (EUR/kWh)<input name="gas_price_eur_kwh" type="number" min="0" step="any" placeholder="Ex. 0.10"></label><label>Prix du reseau de chaleur (EUR/kWh)<input name="district_price_eur_kwh" type="number" min="0" step="any" placeholder="Ex. 0.12"></label><label>Prix specifique du chauffage (EUR/kWh)<input name="heating_energy_price_eur_kwh" type="number" min="0" step="any" placeholder="Facultatif"></label>
 <label>Investissement total (EUR)<input name="lighting_investment_eur" type="number" min="0" step="any" placeholder="Ex. 6000"></label>
 </div><div class="form-actions"><button type="button" class="secondary" id="saveBuilding">Enregistrer dans Mes bâtiments</button><button type="submit" class="primary" id="analyzeBtn">Lancer le diagnostic →</button><span class="muted">Les données sont traitées par le serveur ENERGIA AI et conservées dans sa base de données.</span></div></form></article></section>
-<section class="page" id="page-audit"><div class="section-head"><div><div class="eyebrow">ÉTAPE 02</div><h2>Audit énergétique</h2><p>Résultats et alertes du moteur d'analyse V5.</p></div><button class="secondary" data-go="building">Modifier les données</button></div><div class="two-col"><article class="panel"><h3>Diagnostic technique</h3><div id="alerts" class="action-list"><p class="muted">Lancez une analyse depuis l'onglet Bâtiment.</p></div></article><article class="panel"><h3>Recommandations</h3><div id="recommendations" class="action-list"><p class="muted">Les recommandations apparaîtront ici.</p></div></article></div></section>
-<section class="page" id="page-advisor"><div class="section-head"><div><div class="eyebrow">ASSISTANT LOCAL</div><h2>ENERGIA AI Advisor</h2><p>Interrogez le conseiller énergétique du moteur V5.</p></div></div><article class="panel advisor-panel"><div class="chat" id="chat"><div class="chat-message bot">Bonjour ! Je peux expliquer les résultats de votre diagnostic et les recommandations techniques. Commencez par analyser un bâtiment.</div></div><form id="askForm" class="ask-form"><input id="question" placeholder="Ex. Quelles actions prioriser pour réduire la consommation ?" required><button class="primary">Envoyer →</button></form></article></section>
+<section class="page" id="page-audit"><div class="section-head"><div><div class="eyebrow">ÉTAPE 02</div><h2>Audit énergétique</h2><p>Résultats et alertes du moteur d'analyse V5.</p></div><button class="secondary" data-go="building">Modifier les données</button></div><div class="two-col"><article class="panel"><h3>Diagnostic technique</h3><div id="alerts" class="action-list"><p class="muted">Lancez une analyse depuis l'onglet Bâtiment.</p></div></article><article class="panel"><h3>Recommandations</h3><div id="recommendations" class="action-list"><p class="muted">Les recommandations apparaîtront ici.</p></div></article></div>
+<article class="panel" id="economicComparisonPanel">
+  <div class="panel-head">
+    <div>
+      <h3>Comparaison &eacute;conomique des investissements</h3>
+      <p>Classement indicatif selon le temps de retour simple</p>
+    </div>
+    <span class="pill">Analyse financi&egrave;re</span>
+  </div>
+  <div id="economicComparison">
+    <p class="muted">Effectuez un diagnostic pour comparer les investissements.</p>
+  </div>
+  <p class="muted">
+    Les r&eacute;sultats d&eacute;pendent des tarifs, des investissements
+    et des hypoth&egrave;ses saisis.
+    Les &eacute;conomies peuvent se recouper et ne doivent pas
+    &ecirc;tre additionn&eacute;es automatiquement.
+  </p>
+</article>
+</section>
+
+<section class="page" id="page-advisor">
+
+<!-- ENERGIA_ADVISOR_MODE_V8 -->
+<div id="energiaAdvisorModePanel"
+     class="panel"
+     style="margin-bottom:18px">
+
+  <div class="eyebrow">SOURCE DES DONNEES</div>
+
+  <h3>Mode d'analyse</h3>
+
+  <p class="muted">
+    Choisissez les donnees que l'assistant doit analyser.
+  </p>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+
+    <label style="display:flex;align-items:center;gap:8px">
+      <input
+        type="radio"
+        name="energiaAdvisorMode"
+        value="building"
+        checked
+      >
+      Diagnostic batiment
+    </label>
+
+    <label style="display:flex;align-items:center;gap:8px">
+      <input
+        type="radio"
+        name="energiaAdvisorMode"
+        value="consumption"
+      >
+      Consommations importees
+    </label>
+
+    <!-- ENERGIA_ADVISOR_COMBINED_MODE_V8 -->
+    <label style="display:flex;align-items:center;gap:8px">
+      <input
+        type="radio"
+        name="energiaAdvisorMode"
+        value="combined"
+      >
+      Analyse combinee
+    </label>
+
+
+  </div>
+
+  <p id="energiaAdvisorModeStatus"
+     class="muted"
+     aria-live="polite">
+    Mode actuel : diagnostic batiment.
+  </p>
+
+<div class="energia-ai-consent">
+  <label for="energiaExternalAIConsent">
+    <input
+      type="checkbox"
+      id="energiaExternalAIConsent"
+    >
+    Autoriser l'utilisation de l'IA externe pour cette question
+  </label>
+  <p>
+    Sans autorisation, ENERGIA AI utilise son assistant local.
+    Si l'IA externe est activee sur le serveur, la question
+    et des indicateurs energetiques limites peuvent etre
+    transmis au fournisseur d'IA.
+  </p>
+</div>
+
+
+</div>
+<div class="section-head"><div><div class="eyebrow">ASSISTANT LOCAL</div><h2>ENERGIA AI Advisor</h2><p>Interrogez le conseiller énergétique du moteur V5.</p></div></div><article class="panel advisor-panel"><div class="chat" id="chat"><div class="chat-message bot">Bonjour ! Je peux expliquer les résultats de votre diagnostic et les recommandations techniques. Commencez par analyser un bâtiment.</div></div><form id="askForm" class="ask-form"><input id="question" placeholder="Ex. Quelles actions prioriser pour réduire la consommation ?" required><button class="primary">Envoyer →</button></form></article></section>
 <section class="page" id="page-reports"><div class="section-head"><div><div class="eyebrow">EXPORT & TRAÇABILITÉ</div><h2>Rapports & méthode</h2><p>Conservez une synthèse de votre pré-diagnostic énergétique.</p></div></div><article class="panel"><h3>Rapport énergétique PDF</h3><p class="muted">Après avoir lancé un diagnostic dans Bâtiment, téléchargez votre rapport énergétique avec les indicateurs, les alertes, les recommandations et les économies potentielles.</p><button class="primary" id="downloadReport">↓ Générer le rapport PDF</button><div class="divider"></div><h3>Limites méthodologiques</h3><p class="muted">Résultats indicatifs fondés sur les données saisies. Les recommandations doivent être confirmées par mesures, visite technique et analyse détaillée. Il ne s'agit pas d'un audit réglementaire.</p></article></section>
 <footer>© ENERGIA AI · Building Intelligence <span>Interface professionnelle · Moteur HVAC Building V5 conservé</span></footer></main></div></body></html>

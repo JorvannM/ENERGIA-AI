@@ -9,8 +9,45 @@ def normalize_text(text):
     return "".join(c for c in text if not unicodedata.combining(c))
 
 
-def generate_local_answer(question, data, recommendations, diagnosis):
+def generate_local_answer(question, data, recommendations, diagnosis, analysis_context=None):
     q = normalize_text(question)
+
+    # Analyse contextuelle des questions sur l'electricite.
+    if analysis_context and any(
+        word in q for word in (
+            "electricite",
+            "electrique",
+            "kwh electrique",
+            "consommation elec"
+        )
+    ):
+        from advisor_intelligence import answer_electricity
+        return answer_electricity(analysis_context)
+
+    # Analyse economique prioritaire lorsque la question
+    # porte sur les gains, les couts ou les investissements.
+    if analysis_context:
+        from advisor_intelligence import answer_economics
+
+        economic_answer = answer_economics(
+            question,
+            analysis_context
+        )
+
+        if economic_answer is not None:
+            return economic_answer
+
+    # Analyse contextuelle des postes energetiques.
+    if analysis_context:
+        from advisor_intelligence import answer_energy_topic
+
+        technical_answer = answer_energy_topic(
+            question,
+            analysis_context
+        )
+
+        if technical_answer is not None:
+            return technical_answer
 
     total = float(data.get("total_kwh", 0) or 0)
     intensity = float(data.get("intensity", 0) or 0)

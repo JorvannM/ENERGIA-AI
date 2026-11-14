@@ -39,6 +39,12 @@ class AuditInput(BaseModel):
     cooling_eer_proposed: float | None = Field(default=None, gt=0)
     heating_energy_kwh_year: float | None = Field(default=None, ge=0)
     heating_reduction_pct: float | None = Field(default=None, ge=0, le=100)
+    gas_price_eur_kwh: float | None = Field(default=None, ge=0)
+    heating_investment_eur: float | None = Field(default=None, ge=0)
+    ventilation_investment_eur: float | None = Field(default=None, ge=0)
+    cooling_investment_eur: float | None = Field(default=None, ge=0)
+    heating_energy_price_eur_kwh: float | None = Field(default=None, ge=0)
+    district_price_eur_kwh: float | None = Field(default=None, ge=0)
     ventilation_fan_power_w: float | None = Field(default=None, gt=0)
     ventilation_schedule_hours_day: float | None = Field(default=None, ge=0, le=24)
     ventilation_proposed_hours_day: float | None = Field(default=None, ge=0, le=24)
@@ -46,6 +52,7 @@ class AuditInput(BaseModel):
 class QuestionInput(BaseModel):
     audit: AuditInput
     question: str = Field(min_length=1, max_length=2000)
+    allow_external_ai: bool = False
 
 def calculate(payload: AuditInput):
     try:
@@ -74,6 +81,232 @@ def calculate(payload: AuditInput):
 def home():
     return FileResponse(ROOT/'web'/'index.html')
 
+
+
+# ENERGIA_CONSUMPTION_SESSION_API_V8
+@app.get("/api/consumption/session")
+def get_energy_consumption_session(request: Request):
+    """Consulter les donnees energetiques de la session."""
+
+    from consumption_session import (
+        get_authenticated_consumption_key,
+        get_consumption_session,
+    )
+
+    session_key = get_authenticated_consumption_key(request)
+    report = get_consumption_session(session_key)
+
+    if report is None:
+        return {
+            "success": True,
+            "available": False,
+            "message": (
+                "Aucune consommation importee "
+                "pour cette session."
+            ),
+        }
+
+    return {
+        "success": True,
+        "available": True,
+        "record_count": report.get("record_count", 0),
+        "analysis": report.get("analysis", {}),
+        "anomalies": report.get("anomalies", {}),
+        "comparison": report.get("comparison", {}),
+        "insights": report.get("insights", {}),
+    }
+
+
+
+# ENERGIA_CONSUMPTION_QA_API_V8
+class ConsumptionQuestionInput(BaseModel):
+    question: str = Field(min_length=1, max_length=1000)
+
+
+@app.post("/api/consumption/ask")
+def ask_consumption_question(
+    payload: ConsumptionQuestionInput,
+    request: Request
+):
+    """Interroger les consommations de la session authentifiee."""
+
+    from consumption_session import (
+        get_authenticated_consumption_key,
+        get_consumption_session,
+    )
+    from consumption_qa import answer_consumption_question
+
+    session_key = get_authenticated_consumption_key(request)
+    report = get_consumption_session(session_key)
+
+    if report is None:
+        return {
+            "success": True,
+            "answered": False,
+            "answer": (
+                "Aucune donnee energetique n'est disponible "
+                "pour cette session. Importez d'abord "
+                "un fichier CSV ou Excel."
+            ),
+            "source": "consumption_session",
+        }
+
+    result = answer_consumption_question(
+        payload.question,
+        report
+    )
+
+    return {
+        "success": True,
+        "answered": result.get("answered", False),
+        "answer": result.get("answer", ""),
+        "source": result.get("source", "consumption_qa"),
+    }
+
+
+
+# ENERGIA_COMBINED_ANALYSIS_API_V8
+class CombinedAnalysisInput(BaseModel):
+    building_result: dict
+    question: str = Field(default="", max_length=1000)
+
+
+@app.post("/api/consumption/combined")
+def analyze_combined_consumption(
+    payload: CombinedAnalysisInput,
+    request: Request
+):
+    """Croiser diagnostic batiment et consommations importees."""
+
+    from consumption_session import (
+        get_authenticated_consumption_key,
+        get_consumption_session,
+    )
+    from combined_energy_analysis import analyze_combined_energy
+    from combined_energy_qa import answer_combined_question
+
+    session_key = get_authenticated_consumption_key(request)
+    report = get_consumption_session(session_key)
+
+    if report is None:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Aucune consommation importee pour cette session. "
+                "Importez un fichier CSV ou Excel."
+            )
+        )
+
+    result = analyze_combined_energy(
+        payload.building_result,
+        report
+    )
+
+    # ENERGIA_COMBINED_QA_CONNECTION_V8
+    answer = answer_combined_question(
+        payload.question,
+        result
+    )
+
+    return {
+        "success": True,
+        "combined": result,
+        "answered": answer.get("answered", False),
+        "answer": answer.get("answer", ""),
+        "source": answer.get(
+            "source", "combined_energy_analysis"
+        ),
+    }
+
+
+@app.post("/api/consumption/import")
+async def import_energy_consumption(request: Request):
+    """Importer et analyser des consommations CSV/XLSX."""
+    from consumption_import import import_consumption_file
+    from consumption_analysis import analyze_monthly_consumption
+    from consumption_anomalies import detect_consumption_anomalies
+    from consumption_comparison import compare_annual_consumption
+    from consumption_advisor import generate_consumption_insights
+    from consumption_session import (
+        get_authenticated_consumption_key,
+        save_consumption_session,
+    )
+
+    max_bytes = 5 * 1024 * 1024
+
+    try:
+        form = await request.form()
+        uploaded = form.get("file")
+
+        if uploaded is None or not hasattr(uploaded, "read"):
+            raise HTTPException(
+                status_code=422,
+                detail="Fichier manquant."
+            )
+
+        filename = getattr(uploaded, "filename", "") or ""
+
+        if Path(filename).suffix.lower() not in (".csv", ".xlsx"):
+            raise HTTPException(
+                status_code=422,
+                detail="Formats acceptes : CSV et XLSX."
+            )
+
+        content_bytes = await uploaded.read(max_bytes + 1)
+
+        if len(content_bytes) > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail="Fichier trop volumineux (5 Mo maximum)."
+            )
+
+        records = import_consumption_file(
+            filename, content_bytes
+        )
+
+        analysis = analyze_monthly_consumption(records)
+        anomalies = detect_consumption_anomalies(records)
+        comparison = compare_annual_consumption(records)
+        insights = generate_consumption_insights(
+            analysis, anomalies, comparison
+        )
+
+        # Stockage temporaire lie a la session authentifiee.
+        session_key = get_authenticated_consumption_key(request)
+
+        save_consumption_session(
+            session_key,
+            {
+                "filename": filename,
+                "record_count": len(records),
+                "records": records,
+                "analysis": analysis,
+                "anomalies": anomalies,
+                "comparison": comparison,
+                "insights": insights,
+            }
+        )
+
+
+        return {
+            "success": True,
+            "filename": filename,
+            "record_count": len(records),
+            "records": records,
+            "analysis": analysis,
+            "anomalies": anomalies,
+            "comparison": comparison,
+            "insights": insights
+        }
+
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc)
+        ) from exc
+
 @app.post('/api/analyze')
 def analyze(payload: AuditInput):
     return calculate(payload)
@@ -81,7 +314,13 @@ def analyze(payload: AuditInput):
 @app.post('/api/ask')
 def ask(payload: QuestionInput):
     result = calculate(payload.audit)
-    answer, mode = ask_ai(payload.question, result['data'], result['recommendations'])
+    answer, mode = ask_ai(
+        payload.question,
+        result['data'],
+        result['recommendations'],
+        analysis_context=result,
+        allow_external_ai=payload.allow_external_ai
+    )
     return {'answer': answer, 'mode': mode}
 
 @app.post('/api/report')

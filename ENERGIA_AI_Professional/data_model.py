@@ -48,6 +48,12 @@ class BuildingData:
     lighting_power_proposed_w: float | None = None
     electricity_price_eur_kwh: float | None = None
     lighting_investment_eur: float | None = None
+    gas_price_eur_kwh: float | None = None
+    heating_investment_eur: float | None = None
+    ventilation_investment_eur: float | None = None
+    cooling_investment_eur: float | None = None
+    heating_energy_price_eur_kwh: float | None = None
+    district_price_eur_kwh: float | None = None
     dhw_gas_kwh: float | None = None
     notes: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)

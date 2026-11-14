@@ -157,6 +157,14 @@ def build_recommendations(data):
         ventilation = simulate_ventilation_savings(data)
 
         if ventilation["available"] and ventilation["savings_kwh_year"] > 0:
+            from equipment_economics import evaluate_equipment_economics
+
+            ventilation_economics = evaluate_equipment_economics(
+                ventilation,
+                energy_price_eur_kwh=data.get("electricity_price_eur_kwh"),
+                investment_eur=data.get("ventilation_investment_eur")
+            )
+
             recommendations.append({
                 "title": "Optimisation des horaires de ventilation",
                 "detail": (
@@ -178,7 +186,8 @@ def build_recommendations(data):
                     "Simulation indicative a puissance constante. "
                     "Ne pas additionner aux estimations globales."
                 ),
-                "simulation": ventilation
+                "simulation": ventilation,
+                "economics": ventilation_economics
             })
 
     from heating_savings import simulate_heating_savings
@@ -186,6 +195,19 @@ def build_recommendations(data):
     heating = simulate_heating_savings(data)
 
     if heating["available"] and heating["savings_kwh_year"] > 0:
+        from equipment_economics import (
+            evaluate_equipment_economics,
+            resolve_heating_energy_price
+        )
+
+        heating_price = resolve_heating_energy_price(data)
+
+        heating_economics = evaluate_equipment_economics(
+            heating,
+            energy_price_eur_kwh=heating_price,
+            investment_eur=data.get("heating_investment_eur")
+        )
+
         recommendations.append({
             "title": "Optimisation energetique du chauffage",
             "detail": (
@@ -207,7 +229,8 @@ def build_recommendations(data):
                 "Simulation indicative fondee sur un taux saisi. "
                 "Ne pas additionner aux estimations globales."
             ),
-            "simulation": heating
+            "simulation": heating,
+            "economics": heating_economics
         })
 
     from cooling_savings import simulate_cooling_savings
@@ -216,6 +239,14 @@ def build_recommendations(data):
         cooling = simulate_cooling_savings(data)
 
         if cooling["available"] and cooling["savings_kwh_year"] > 0:
+            from equipment_economics import evaluate_equipment_economics
+
+            cooling_economics = evaluate_equipment_economics(
+                cooling,
+                energy_price_eur_kwh=data.get("electricity_price_eur_kwh"),
+                investment_eur=data.get("cooling_investment_eur")
+            )
+
             recommendations.append({
                 "title": "Amelioration de l'efficacite de la climatisation",
                 "detail": (
@@ -238,10 +269,12 @@ def build_recommendations(data):
                     "Simulation indicative a puissance constante. "
                     "Ne pas additionner aux estimations globales."
                 ),
-                "simulation": cooling
+                "simulation": cooling,
+                "economics": cooling_economics
             })
 
-    return recommendations
+    from recommendation_intelligence import prioritize_recommendations
+    return prioritize_recommendations(recommendations)
 
 def estimate_savings(data, recommendations):
     # Ne pas additionner des gains par poste sans sous-comptage : enveloppe conservatrice globale.
@@ -273,39 +306,151 @@ def estimate_carbon(data, factors=None):
     return result
 
 
-def ask_ai(question, data, recommendations):
+def ask_ai(question, data, recommendations, analysis_context=None, allow_external_ai=False):
     """
-    Conseiller énergétique automatique local.
-    Fonctionne sans clé API et sans connexion OpenAI.
+    ENERGIA AI Advisor - moteur hybride.
+    Les calculs proviennent exclusivement des moteurs Python.
+    Retour automatique au conseiller local si l'API est indisponible.
     """
-    try:
-        diagnosis = diagnose_building(data)
+    import json
+    import os
 
-        answer = generate_local_answer(
+    diagnosis = diagnose_building(data)
+
+    def local_answer():
+        return generate_local_answer(
             question=question,
             data=data,
             recommendations=recommendations,
-            diagnosis=diagnosis
+            diagnosis=diagnosis,
+            analysis_context=analysis_context
         )
 
-        return answer, "Assistant expert local"
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
 
-    except Exception as exc:
-        return (
-            f"Impossible de générer la réponse locale : "
-            f"{type(exc).__name__} — {exc}",
-            "Erreur locale"
-        )
+    external_enabled = (
+        os.getenv("ENERGIA_EXTERNAL_AI_ENABLED", "false")
+        .strip()
+        .lower() == "true"
+    )
+
+    # Securite : l'IA externe est desactivee par defaut.
+    # Une cle API seule ne suffit pas a autoriser l'envoi.
+    if (
+        not external_enabled
+        or not api_key
+        or allow_external_ai is not True
+    ):
+        return local_answer(), "Assistant expert local"
 
     try:
         from openai import OpenAI
-        response = OpenAI().responses.create(
-            model=os.getenv("OPENAI_MODEL","gpt-4.1-mini"),
-            instructions=("Tu es un ingénieur conseil en efficacité énergétique des bâtiments. "
-                          "Réponds en français, distingue mesures, déclarations et hypothèses. "
-                          "Ne présente jamais ce pré-diagnostic comme un audit réglementaire."),
-            input=f"Question : {question}\nDonnées : {data}\nRecommandations : {recommendations}"
+
+        # Liste blanche : aucun objet brut n'est transmis.
+        allowed_numeric_fields = (
+            "surface_m2",
+            "total_kwh",
+            "intensity",
+            "annual_cost",
+            "annual_energy_cost_eur",
+            "annualized_total_kwh",
+            "annualized_intensity_kwh_m2_year",
+            "data_period_months",
+            "electricity_kwh",
+            "gas_kwh",
+            "district_kwh",
         )
-        return response.output_text, "OpenAI API"
-    except Exception as exc:
-        return f"IA distante indisponible ({exc}). Le diagnostic local reste accessible.", "Mode local"
+
+        def safe_numbers(source):
+            import math
+
+            if not isinstance(source, dict):
+                return {}
+
+            result = {}
+
+            for field in allowed_numeric_fields:
+                value = source.get(field)
+
+                if (
+                    isinstance(value, (int, float))
+                    and not isinstance(value, bool)
+                    and math.isfinite(value)
+                ):
+                    result[field] = value
+
+            return result
+
+        context = {
+            "building_indicators": safe_numbers(data),
+        }
+
+        if isinstance(analysis_context, dict):
+            carbon_data = analysis_context.get("carbon") or {}
+            savings_data = analysis_context.get("savings") or {}
+
+            if isinstance(carbon_data, dict):
+                context["carbon_indicators"] = {
+                    key: value
+                    for key in (
+                        "total_kgco2e",
+                        "total_tco2e",
+                        "total_kg",
+                        "total_tonnes",
+                    )
+                    if (
+                        isinstance(value := carbon_data.get(key), (int, float))
+                        and not isinstance(value, bool)
+                        and __import__("math").isfinite(value)
+                    )
+                }
+
+            if isinstance(savings_data, dict):
+                context["savings_indicators"] = {
+                    key: value
+                    for key in ("savings_kwh_year", "savings_pct")
+                    if (
+                        isinstance(value := savings_data.get(key), (int, float))
+                        and not isinstance(value, bool)
+                        and __import__("math").isfinite(value)
+                    )
+                }
+
+        response = OpenAI(api_key=api_key).responses.create(
+            model=os.getenv("OPENAI_MODEL") or "gpt-4.1-mini",
+            instructions=(
+                "Tu es ENERGIA AI Advisor, assistant expert en "
+                "efficacite energetique des batiments. "
+                "Reponds en francais avec precision. "
+                "Utilise uniquement les valeurs et les resultats "
+                "techniques fournis dans le contexte. "
+                "N'invente aucune consommation, economie, "
+                "emission ou rentabilite. "
+                "Distingue les donnees mesurees, les estimations "
+                "et les hypotheses. "
+                "Indique les limites des informations disponibles. "
+                "Ne presente jamais un pre-diagnostic comme "
+                "un audit energetique reglementaire."
+            ),
+            input=(
+                "QUESTION :\n"
+                + str(question)
+                + "\n\nCONTEXTE ENERGETIQUE :\n"
+                + json.dumps(
+                    context,
+                    ensure_ascii=False,
+                    default=str
+                )
+            ),
+            max_output_tokens=1200
+        )
+
+        answer = (response.output_text or "").strip()
+
+        if not answer:
+            return local_answer(), "Assistant expert local"
+
+        return answer, "ENERGIA AI hybride"
+
+    except Exception:
+        return local_answer(), "Assistant expert local"
